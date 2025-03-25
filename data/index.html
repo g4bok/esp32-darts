@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="icon" href="data:,">
+        <style>
+            html { font-family: monospace; display: inline-block; margin: 0px auto; text-align: center;}
+            .button { 
+                background-color: yellowgreen; 
+                border: none; 
+                color: white; 
+                padding: 10px 20px; /* Ridotto rispetto a prima */
+                text-decoration: none; 
+                font-size: 20px; /* Font più piccolo */
+                margin: 2px; 
+                cursor: pointer; 
+                border-radius: 10px; /* Bordi arrotondati */
+            }
+            .button2 {
+                        background-color: gray;
+                    }
+            .player-row {
+                margin: 10px 0;
+            }
+            .player-row input {
+                margin: 0 5px;
+                width: 100px; /* Larghezza maggiore */
+            }
+        </style>
+        <script>
+            let players = [];
+            let scores = {};
+
+            function updatePlayers() {
+                const playerNamesDiv = document.getElementById("playerNames");
+                playerNamesDiv.innerHTML = "";
+
+                for (let i = 1; i <= 2; i++) {
+                    playerNamesDiv.innerHTML += `
+                        <label for="player${i}">Nome Giocatore ${i}:</label>
+                        <input type="text" id="player${i}" name="player${i}"><br><br>
+                    `;
+                }
+            }
+
+            function startGame() {
+                players = [];
+                scores = {};
+                for (let i = 1; i <= 2; i++) {
+                    const playerName = document.getElementById(`player${i}`).value || `Giocatore ${i}`;
+                    players.push(playerName);
+                    scores[playerName] = 301;
+                }
+                renderScoreboard();
+            }
+
+            function renderScoreboard() {
+                const scoreboardDiv = document.getElementById("scoreboard");
+                scoreboardDiv.innerHTML = "";
+
+                players.forEach(player => {
+                    scoreboardDiv.innerHTML += `
+                        <div class="player-row">
+                            <span>${player}</span>
+                            <input type="number" id="scoreInput-${player}" placeholder="Punti da sottrarre">
+                            <button onclick="submitScore('${player}')">Invia</button>
+                            <span id="total-${player}">Totale: ${scores[player]}</span>
+                        </div>
+                    `;
+                });
+            }
+
+                function submitScore(player) {
+                const scoreInput = document.getElementById(`scoreInput-${player}`);
+                const score = parseInt(scoreInput.value);
+                if (!isNaN(score)) {
+                    fetch('/updateScore', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `player=${player === players[0] ? 0 : 1}&score=${score}`
+                    }).then(response => {
+                        if (response.ok) {
+                            scores[player] -= score;
+                            if (scores[player] < 0) scores[player] = 0; // Evita punteggi negativi
+                            document.getElementById(`total-${player}`).innerText = `Totale: ${scores[player]}`;
+                                scoreInput.value = "";
+                        } else {
+                            alert("Errore nell'aggiornamento del punteggio");
+                        }
+                    });
+                }
+            }
+
+            // Call updatePlayers on page load to initialize the player input fields
+            window.onload = updatePlayers;
+        </script>
+    </head> 
+    <body>
+        <h1>Punteggi Freccette</h1>
+        <p>Inserisci i nomi dei giocatori:</p>
+
+        <div id="playerNames"></div>
+        <button id="startButton" class="button" onclick="startGame()">Inizia Partita</button>
+        <br><br>
+
+        <div id="scoreboard"></div>
+    </body>
+</html>
